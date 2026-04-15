@@ -1,35 +1,19 @@
 import random
 import json
-from telegram import Update, ReplyKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-
 import os
+
+from telegram import Update, ReplyKeyboardMarkup
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
+)
+
 TOKEN = os.environ.get("TOKEN")
 
 DATA_FILE = "data.json"
-
-calm_messages = [
-    "Начни с 5 минут 📚",
-    "Просто открой тетрадь",
-    "Маленький шаг лучше, чем никакого",
-    "Ты справишься 💪"
-]
-
-praise_messages = [
-    "🔥 Молодец!",
-    "👏 Отлично!",
-    "💪 Так держать!",
-    "🚀 Супер!"
-]
-
-keyboard = ReplyKeyboardMarkup(
-    [
-        ["🚀 Начать работу"],
-        ["✅ Завершил"],
-        ["📊 Статистика"]
-    ],
-    resize_keyboard=True
-)
 
 # загрузка данных
 def load_data():
@@ -39,14 +23,60 @@ def load_data():
     except:
         return {}
 
-# сохранение данных
 def save_data(data):
     with open(DATA_FILE, "w") as f:
         json.dump(data, f)
 
 user_stats = load_data()
+active_users = set()
 
-# уровни
+# клавиатура
+keyboard = ReplyKeyboardMarkup(
+    [
+        ["🚀 Начать работу"],
+        ["✅ Завершил"],
+        ["📊 Статистика"]
+    ],
+    resize_keyboard=True
+)
+
+# ====== ФРАЗЫ ======
+
+reminder_messages = [
+    "📵 Хватит скроллить — начни делать домашку",
+    "⏳ 10 минут работы сейчас лучше, чем 2 часа прокрастинации",
+    "📚 Открой тетрадь и сделай хотя бы 1 шаг",
+    "🚀 Если уже сделал — нажми «✅ Завершил»",
+    "💪 Ты либо отдыхаешь, либо двигаешься вперёд",
+    "🔥 Просто начни. Без настроения."
+]
+
+praise_messages = [
+    "🔥 Отлично! Ты реально сделал это",
+    "💪 Вот это дисциплина",
+    "🚀 Красавчик, продолжай в том же духе",
+    "👏 Ты не откладываешь — ты делаешь",
+    "🏆 Ещё один шаг вперёд"
+]
+
+motivation_messages = [
+    "Начни сейчас — и через 20 минут ты уже в процессе 💪",
+    "Ты уже ближе к цели, чем думаешь",
+    "Маленькие действия дают большие результаты",
+    "Сделай сейчас — и потом будешь свободен",
+    "Ты можешь больше, чем тебе кажется"
+]
+
+study_messages = [
+    "10 минут концентрации = меньше стресса вечером",
+    "Сначала дело — потом отдых",
+    "Закрой один маленький пункт из списка задач",
+    "Учёба не станет легче, если её откладывать",
+    "Сделай задачу сейчас и выдохни спокойно"
+]
+
+# ====== УРОВНИ ======
+
 def get_level(count):
     if count <= 3:
         return "🌱 Новичок", 3
@@ -59,9 +89,12 @@ def get_level(count):
     else:
         return "🔥 Машина", None
 
-# старт
+# ====== СТАРТ ======
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.chat_id)
+
+    active_users.add(user_id)
 
     if user_id not in user_stats:
         user_stats[user_id] = {"done": 0}
@@ -72,7 +105,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=keyboard
     )
 
-# обработка кнопок
+# ====== НАПОМИНАНИЯ ======
+
+async def send_reminders(context: ContextTypes.DEFAULT_TYPE):
+    for user_id in list(active_users):
+        try:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=random.choice(reminder_messages)
+            )
+        except:
+            pass
+
+# ====== ОБРАБОТКА КНОПОК ======
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.chat_id)
     text = update.message.text
@@ -83,7 +129,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # начать работу
     if text == "🚀 Начать работу":
         await update.message.reply_text(
-            "Начни с 10–15 минут работы 💪"
+            random.choice(motivation_messages)
         )
 
     # завершил задачу
@@ -116,10 +162,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"📊 Ты выполнил {count} задач"
         )
 
-# запуск бота
-app = ApplicationBuilder().token(TOKEN).build()
+# ====== ЗАПУСК ======
+
+app =
+
+
+cationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-app.run_polling(drop_pending_updates=True)
+# job queue (напоминания)
+job_queue = app.job_queue
+job_queue.run_repeating(
+    send_reminders,
+    interval=60 * 60,  # 1 час (можешь поменять на 2 часа = 7200)
+    first=10
+)
+
+app.run_polling(drop_pending_updates=True) Appli
