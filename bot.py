@@ -164,7 +164,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ====== ЗАПУСК ======
 
-app =
+app = ApplicationBuilder().token(TOKEN).build()
 
 
 cationBuilder().token(TOKEN).build()
