@@ -180,4 +180,4 @@ job_queue.run_repeating(
     first=10
 )
 
-app.run_polling(drop_pending_updates=True) Appli
+app.run_polling(drop_pending_updates=True)
